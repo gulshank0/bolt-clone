@@ -13,7 +13,7 @@ To set up the project, follow these steps:
 
 ### 1. Clone the Repository
 
-$ git clone https://github.com/yourusername/TARS.git
+$ git clone https://github.com/gulshank0/bolt-clone.git
 $ cd bolt-clone
 
 
