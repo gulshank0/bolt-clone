@@ -31,6 +31,7 @@ export function Home() {
         <button className="text-bold hover:text-gray-500" onClick={() => navigate("/feedback")}>Feedback</button>
         <button className="text-bold hover:text-gray-500" onClick={() => navigate("/contact")}>Contact us</button>
         <button className="text-bold hover:text-gray-500" onClick={() => navigate("/about")}>About us</button>
+        <button className="text-bold hover:text-gray-500" onClick={() => navigate("/login")}>Login</button>
         
         </div> 
       </div>
