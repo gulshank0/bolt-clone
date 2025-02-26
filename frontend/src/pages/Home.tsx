@@ -40,7 +40,7 @@ export function Home() {
           <div className="text-center mb-8">
            
             <h1 className="text-4xl font-bold text-gray-100 mb-4">
-             Gulashan Copied Project is here to help you 
+             Gulashan Copied Project is here to help you fix 
             </h1>
             <p className="text-lg text-gray-300">
               Generate a website of your choice
