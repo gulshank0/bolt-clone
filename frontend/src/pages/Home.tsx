@@ -43,7 +43,7 @@ export function Home() {
              Gulashan Copied Project is here to help you fix 
             </h1>
             <p className="text-lg text-gray-300">
-              Generate a website of your choice
+              Generate a website of your choice 
             </p>
           </div>
 
