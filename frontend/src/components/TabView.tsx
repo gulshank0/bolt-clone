@@ -1,36 +1,43 @@
-import React from 'react';
-import { Code2, Eye } from 'lucide-react';
+import { Code2, Eye } from "lucide-react";
 
 interface TabViewProps {
-  activeTab: 'code' | 'preview';
-  onTabChange: (tab: 'code' | 'preview') => void;
+  activeTab: "code" | "preview";
+  onTabChange: (tab: "code" | "preview") => void;
 }
 
 export function TabView({ activeTab, onTabChange }: TabViewProps) {
+  const tabs = [
+    { id: "code" as const, label: "Code", icon: Code2 },
+    { id: "preview" as const, label: "Preview", icon: Eye },
+  ];
+
   return (
-    <div className="flex space-x-2 mb-4">
-      <button
-        onClick={() => onTabChange('code')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-          activeTab === 'code'
-            ? 'bg-gray-700 text-gray-100'
-            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-        }`}
-      >
-        <Code2 className="w-4 h-4" />
-        Code
-      </button>
-      <button
-        onClick={() => onTabChange('preview')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-          activeTab === 'preview'
-            ? 'bg-gray-700 text-gray-100'
-            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-        }`}
-      >
-        <Eye className="w-4 h-4" />
-        Preview
-      </button>
+    <div
+      className="flex gap-1 p-1 rounded-xl mb-3"
+      style={{ background: "var(--color-bg-glass)" }}
+    >
+      {tabs.map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          onClick={() => onTabChange(id)}
+          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          style={{
+            background:
+              activeTab === id ? "var(--color-bg-secondary)" : "transparent",
+            color:
+              activeTab === id
+                ? "var(--color-text-primary)"
+                : "var(--color-text-muted)",
+            border:
+              activeTab === id
+                ? "1px solid var(--color-border)"
+                : "1px solid transparent",
+          }}
+        >
+          <Icon className="w-4 h-4" />
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

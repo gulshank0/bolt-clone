@@ -29,10 +29,20 @@ import { Step, StepType } from './types';
  * The input can have strings in the middle they need to be ignored
  */
 export function parseXml(response: string): Step[] {
+    // Preprocess: strip thinking tags (Gemini 2.5 models)
+    let cleaned = response.replace(/<think>[\s\S]*?<\/think>/g, '');
+
+    // Strip markdown code fences that may wrap the XML
+    cleaned = cleaned.replace(
+      /```(?:xml|html|tsx|jsx|typescript|javascript)?\s*\n?([\s\S]*?)```/g,
+      '$1',
+    );
+
     // Extract the XML content between <boltArtifact> tags
-    const xmlMatch = response.match(/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/);
+    const xmlMatch = cleaned.match(/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/);
     
     if (!xmlMatch) {
+      console.warn('[parseXml] No <boltArtifact> found in response');
       return [];
     }
   
@@ -41,7 +51,7 @@ export function parseXml(response: string): Step[] {
     let stepId = 1;
   
     // Extract artifact title
-    const titleMatch = response.match(/title="([^"]*)"/);
+    const titleMatch = cleaned.match(/<boltArtifact[^>]*title="([^"]*)"/);
     const artifactTitle = titleMatch ? titleMatch[1] : 'Project Files';
   
     // Add initial artifact step
@@ -53,13 +63,20 @@ export function parseXml(response: string): Step[] {
       status: 'pending'
     });
   
-    // Regular expression to find boltAction elements
-    const actionRegex = /<boltAction\s+type="([^"]*)"(?:\s+filePath="([^"]*)")?>([\s\S]*?)<\/boltAction>/g;
+    // Robust regex: extract full boltAction tag, then parse attributes separately
+    const actionRegex = /<boltAction\s+([^>]*)>([\s\S]*?)<\/boltAction>/g;
     
     let match;
     while ((match = actionRegex.exec(xmlContent)) !== null) {
-      const [, type, filePath, content] = match;
-  
+      const [, attrs, content] = match;
+
+      // Parse attributes from the tag
+      const typeMatch = attrs.match(/type="([^"]*)"/);
+      const filePathMatch = attrs.match(/filePath="([^"]*)"/);
+
+      const type = typeMatch?.[1];
+      const filePath = filePathMatch?.[1];
+
       if (type === 'file') {
         // File creation step
         steps.push({
