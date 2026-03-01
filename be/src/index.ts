@@ -312,7 +312,7 @@ app.post("/chat", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 TARS backend running on http://localhost:${PORT}`);
+  console.log(` TARS backend running on http://localhost:${PORT}`);
   console.log(`   Default Model: ${MODEL_OPTIONS[0].id}`);
   console.log(`   API Key: ${process.env.GEMINI_API_KEY?.substring(0, 10)}...`);
 });

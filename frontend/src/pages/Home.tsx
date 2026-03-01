@@ -75,12 +75,11 @@ export function Home() {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => window.location.reload()}
         >
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center animate-gradient"
-            style={{ background: "var(--gradient-accent)" }}
-          >
-            <Sparkles className="w-5 h-5 text-gray-900" />
-          </div>
+          <img 
+            src="/logo.svg" 
+            alt="TARS Logo" 
+            className="w-8 h-8 object-contain"
+          />
           <span className="text-xl font-bold gradient-text tracking-tight">
             TARS
           </span>

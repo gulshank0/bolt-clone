@@ -412,10 +412,11 @@ export function Builder() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2">
-            <Sparkles
-              className="w-4 h-4"
-              style={{ color: "var(--color-accent)" }}
-            />
+            <img 
+            src="/logo.svg" 
+            alt="TARS Logo" 
+            className="w-8 h-8 object-contain"
+          />
             <span className="text-sm font-semibold gradient-text">TARS</span>
           </div>
           <div
