@@ -1,5 +1,8 @@
 import { Step, StepType } from './types';
 
+// Global counter to ensure unique step IDs across multiple parseXml calls
+let globalStepId = 1;
+
 /*
  * Parse input XML and convert it into steps.
  * Eg: Input - 
@@ -38,8 +41,8 @@ export function parseXml(response: string): Step[] {
       '$1',
     );
 
-    // Extract the XML content between <boltArtifact> tags
-    const xmlMatch = cleaned.match(/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/);
+    // Extract the XML content between <boltArtifact> tags (greedy to handle large content)
+    const xmlMatch = cleaned.match(/<boltArtifact[^>]*>([\s\S]*)<\/boltArtifact>/);
     
     if (!xmlMatch) {
       console.warn('[parseXml] No <boltArtifact> found in response');
@@ -48,7 +51,6 @@ export function parseXml(response: string): Step[] {
   
     const xmlContent = xmlMatch[1];
     const steps: Step[] = [];
-    let stepId = 1;
   
     // Extract artifact title
     const titleMatch = cleaned.match(/<boltArtifact[^>]*title="([^"]*)"/);
@@ -56,7 +58,7 @@ export function parseXml(response: string): Step[] {
   
     // Add initial artifact step
     steps.push({
-      id: stepId++,
+      id: globalStepId++,
       title: artifactTitle,
       description: '',
       type: StepType.CreateFolder,
@@ -80,7 +82,7 @@ export function parseXml(response: string): Step[] {
       if (type === 'file') {
         // File creation step
         steps.push({
-          id: stepId++,
+          id: globalStepId++,
           title: `Create ${filePath || 'file'}`,
           description: '',
           type: StepType.CreateFile,
@@ -91,8 +93,8 @@ export function parseXml(response: string): Step[] {
       } else if (type === 'shell') {
         // Shell command step
         steps.push({
-          id: stepId++,
-          title: 'Run command',
+          id: globalStepId++,
+          title: `Run command`,
           description: '',
           type: StepType.RunScript,
           status: 'pending',

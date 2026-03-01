@@ -1,38 +1,12 @@
-import { WebContainer } from "@webcontainer/api";
-import { useEffect, useState } from "react";
+import { useRef } from "react";
 import { Globe, RefreshCw } from "lucide-react";
 
 interface PreviewFrameProps {
-  files: any[];
-  webContainer: WebContainer;
+  url: string;
 }
 
-export function PreviewFrame({ webContainer }: PreviewFrameProps) {
-  const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  async function main() {
-    const installProcess = await webContainer.spawn("npm", ["install"]);
-
-    installProcess.output.pipeTo(
-      new WritableStream({
-        write(data) {
-          console.log(data);
-        },
-      }),
-    );
-
-    await webContainer.spawn("npm", ["run", "dev"]);
-
-    webContainer.on("server-ready", (_port, url) => {
-      setUrl(url);
-      setIsLoading(false);
-    });
-  }
-
-  useEffect(() => {
-    main();
-  }, []);
+export function PreviewFrame({ url }: PreviewFrameProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   return (
     <div
@@ -61,13 +35,12 @@ export function PreviewFrame({ webContainer }: PreviewFrameProps) {
             border: "1px solid var(--color-border)",
           }}
         >
-          {url || "Loading preview..."}
+          {url || "Building your project..."}
         </div>
         {url && (
           <button
             onClick={() => {
-              const iframe = document.querySelector("iframe");
-              if (iframe) iframe.src = url;
+              if (iframeRef.current) iframeRef.current.src = url;
             }}
             className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
             style={{ color: "var(--color-text-muted)" }}
@@ -79,7 +52,7 @@ export function PreviewFrame({ webContainer }: PreviewFrameProps) {
 
       {/* Content */}
       <div className="flex-1 relative" style={{ background: "#ffffff" }}>
-        {isLoading && (
+        {!url && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-4"
             style={{ background: "var(--color-bg-primary)" }}
@@ -98,19 +71,20 @@ export function PreviewFrame({ webContainer }: PreviewFrameProps) {
                 className="text-sm font-medium mb-1"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                Starting preview server...
+                Building your project...
               </p>
               <p
                 className="text-xs"
                 style={{ color: "var(--color-text-muted)" }}
               >
-                Installing dependencies & booting WebContainer
+                Installing dependencies & starting dev server
               </p>
             </div>
           </div>
         )}
         {url && (
           <iframe
+            ref={iframeRef}
             width="100%"
             height="100%"
             src={url}

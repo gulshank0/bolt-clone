@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StepsList } from "../components/StepsList";
 import { FileExplorer } from "../components/FileExplorer";
@@ -36,6 +36,18 @@ export function Builder() {
   const [templateSet, setTemplateSet] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const webcontainer = useWebContainer();
+  const [url, setUrl] = useState("");
+  const executedStepsRef = useRef<Set<number>>(new Set());
+  const runningDevServerRef = useRef(false);
+
+  // Listen for dev server ready in WebContainer
+  useEffect(() => {
+    if (!webcontainer) return;
+    webcontainer.on("server-ready", (_port: number, serverUrl: string) => {
+      console.log("[Builder] Server ready at:", serverUrl);
+      setUrl(serverUrl);
+    });
+  }, [webcontainer]);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
@@ -61,69 +73,80 @@ export function Builder() {
     fetchModels();
   }, []);
 
+  // Process file and folder steps only — shell steps are handled separately
   useEffect(() => {
+    const pendingFileSteps = steps.filter(
+      (s) =>
+        s.status === "pending" &&
+        (s.type === StepType.CreateFile || s.type === StepType.CreateFolder),
+    );
+
+    if (pendingFileSteps.length === 0) return;
+
     let originalFiles = [...files];
-    let updateHappened = false;
-    steps
-      .filter(({ status }) => status === "pending")
-      .map((step) => {
-        updateHappened = true;
-        if (step?.type === StepType.CreateFile) {
-          let parsedPath = step.path?.split("/") ?? [];
-          let currentFileStructure = [...originalFiles];
-          const finalAnswerRef = currentFileStructure;
+    let filesChanged = false;
 
-          let currentFolder = "";
-          while (parsedPath.length) {
-            currentFolder = `${currentFolder}/${parsedPath[0]}`;
-            const currentFolderName = parsedPath[0];
-            parsedPath = parsedPath.slice(1);
+    pendingFileSteps.forEach((step) => {
+      if (step.type === StepType.CreateFile) {
+        filesChanged = true;
+        let parsedPath = step.path?.split("/") ?? [];
+        let currentFileStructure = [...originalFiles];
+        const finalAnswerRef = currentFileStructure;
 
-            if (!parsedPath.length) {
-              const file = currentFileStructure.find(
-                (x) => x.path === currentFolder,
-              );
-              if (!file) {
-                currentFileStructure.push({
-                  name: currentFolderName,
-                  type: "file",
-                  path: currentFolder,
-                  content: step.code,
-                });
-              } else {
-                file.content = step.code;
-              }
+        let currentFolder = "";
+        while (parsedPath.length) {
+          currentFolder = `${currentFolder}/${parsedPath[0]}`;
+          const currentFolderName = parsedPath[0];
+          parsedPath = parsedPath.slice(1);
+
+          if (!parsedPath.length) {
+            const file = currentFileStructure.find(
+              (x) => x.path === currentFolder,
+            );
+            if (!file) {
+              currentFileStructure.push({
+                name: currentFolderName,
+                type: "file",
+                path: currentFolder,
+                content: step.code,
+              });
             } else {
-              const folder = currentFileStructure.find(
-                (x) => x.path === currentFolder,
-              );
-              if (!folder) {
-                currentFileStructure.push({
-                  name: currentFolderName,
-                  type: "folder",
-                  path: currentFolder,
-                  children: [],
-                });
-              }
-
-              currentFileStructure = currentFileStructure.find(
-                (x) => x.path === currentFolder,
-              )!.children!;
+              file.content = step.code;
             }
-          }
-          originalFiles = finalAnswerRef;
-        }
-      });
+          } else {
+            const folder = currentFileStructure.find(
+              (x) => x.path === currentFolder,
+            );
+            if (!folder) {
+              currentFileStructure.push({
+                name: currentFolderName,
+                type: "folder",
+                path: currentFolder,
+                children: [],
+              });
+            }
 
-    if (updateHappened) {
+            currentFileStructure = currentFileStructure.find(
+              (x) => x.path === currentFolder,
+            )!.children!;
+          }
+        }
+        originalFiles = finalAnswerRef;
+      }
+    });
+
+    if (filesChanged) {
       setFiles(originalFiles);
-      setSteps((steps) =>
-        steps.map((s: Step) => ({
-          ...s,
-          status: "completed",
-        })),
-      );
     }
+
+    const completedIds = new Set(pendingFileSteps.map((s) => s.id));
+    setSteps((prev) =>
+      prev.map((s) =>
+        completedIds.has(s.id)
+          ? { ...s, status: "completed" as const }
+          : s,
+      ),
+    );
   }, [steps, files]);
 
   useEffect(() => {
@@ -168,6 +191,101 @@ export function Builder() {
     const mountStructure = createMountStructure(files);
     webcontainer?.mount(mountStructure);
   }, [files, webcontainer]);
+
+  // Execute shell commands from AI steps in WebContainer
+  useEffect(() => {
+    if (!webcontainer) return;
+
+    const pendingShell = steps.filter(
+      (s) =>
+        s.type === StepType.RunScript &&
+        s.status === "pending" &&
+        !executedStepsRef.current.has(s.id),
+    );
+
+    if (pendingShell.length === 0) return;
+
+    // Mark to prevent duplicate execution on re-render
+    pendingShell.forEach((s) => executedStepsRef.current.add(s.id));
+
+    async function executeCommands() {
+      const wc = webcontainer!;
+
+      for (const step of pendingShell) {
+        const fullCmd = step.code?.trim();
+        if (!fullCmd) {
+          setSteps((prev) =>
+            prev.map((s) =>
+              s.id === step.id
+                ? { ...s, status: "completed" as const }
+                : s,
+            ),
+          );
+          continue;
+        }
+
+        // Split chained commands (e.g. "npm install && npm run dev")
+        const commands = fullCmd
+          .split("&&")
+          .map((c) => c.trim())
+          .filter(Boolean);
+
+        for (const cmd of commands) {
+          const parts = cmd.split(/\s+/);
+          const command = parts[0];
+          const args = parts.slice(1);
+
+          // Detect dev server commands
+          const isDevServerCmd =
+            (command === "npm" && args.includes("dev")) ||
+            (command === "npx" &&
+              (args[0] === "vite" || args[0] === "serve"));
+
+          if (isDevServerCmd && runningDevServerRef.current) {
+            console.log(
+              `[Builder] Skipping "${cmd}" — dev server already running`,
+            );
+            continue;
+          }
+
+          try {
+            console.log(`[Builder] Running: ${cmd}`);
+            const process = await wc.spawn(command, args);
+
+            process.output.pipeTo(
+              new WritableStream({
+                write(data) {
+                  console.log(`[${cmd}]`, data);
+                },
+              }),
+            );
+
+            if (isDevServerCmd) {
+              runningDevServerRef.current = true;
+              // Don't await — dev server is long-running
+            } else {
+              const exitCode = await process.exit;
+              console.log(
+                `[Builder] "${cmd}" exited with code ${exitCode}`,
+              );
+            }
+          } catch (error) {
+            console.error(`[Builder] Error running "${cmd}":`, error);
+          }
+        }
+
+        setSteps((prev) =>
+          prev.map((s) =>
+            s.id === step.id
+              ? { ...s, status: "completed" as const }
+              : s,
+          ),
+        );
+      }
+    }
+
+    executeCommands();
+  }, [steps, webcontainer]);
 
   async function init() {
     try {
@@ -443,13 +561,22 @@ export function Builder() {
             <TabView activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
           <div className="flex-1 overflow-hidden p-4 pt-0">
-            {activeTab === "code" ? (
+            <div
+              style={{
+                display: activeTab === "code" ? "block" : "none",
+                height: "100%",
+              }}
+            >
               <CodeEditor file={selectedFile} />
-            ) : (
-              webcontainer && (
-                <PreviewFrame webContainer={webcontainer} files={files} />
-              )
-            )}
+            </div>
+            <div
+              style={{
+                display: activeTab === "preview" ? "block" : "none",
+                height: "100%",
+              }}
+            >
+              <PreviewFrame url={url} />
+            </div>
           </div>
         </div>
       </div>
