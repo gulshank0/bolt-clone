@@ -183,11 +183,10 @@ export function Home() {
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full bg-black/40 text-xs py-2 px-3 rounded-lg border border-white/10 text-gray-300 focus:outline-none focus:border-accent/40 cursor-pointer transition-colors"
-                  style={{ color: "var(--color-text-secondary)" }}
+                  className="w-full bg-black/40 text-xs py-2 px-3 rounded-lg border border-black text-gray-300 focus:outline-none focus:border-accent/40 cursor-pointer transition-colors"
                 >
                   {models.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <option className="bg-black/80" key={m.id} value={m.id}>
                       {m.name}
                     </option>
                   ))}
@@ -201,7 +200,6 @@ export function Home() {
                 disabled={!prompt.trim()}
                 className="btn-primary flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
               >
-                <Sparkles className="w-4 h-4" />
                 Generate Web App
                 <ArrowRight className="w-4 h-4" />
               </button>
