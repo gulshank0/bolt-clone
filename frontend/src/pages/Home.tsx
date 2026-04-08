@@ -75,12 +75,12 @@ export function Home() {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => window.location.reload()}
         >
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center animate-gradient"
-            style={{ background: "var(--gradient-accent)" }}
-          >
-            <Sparkles className="w-5 h-5 text-gray-900" />
-          </div>
+      
+          <img
+            src="/logo.svg"
+            alt="TARS Logo"
+            className="w-8 h-8"
+          />
           <span className="text-xl font-bold gradient-text tracking-tight">
             TARS
           </span>
@@ -114,10 +114,7 @@ export function Home() {
             className="glass px-4 py-2 rounded-full flex items-center gap-2"
             style={{ borderColor: "var(--color-border-active)" }}
           >
-            <Zap
-              className="w-3.5 h-3.5"
-              style={{ color: "var(--color-accent)" }}
-            />
+            
             <span
               className="text-xs font-medium"
               style={{ color: "var(--color-text-secondary)" }}
@@ -180,7 +177,7 @@ export function Home() {
               }}
             />
             <div className="flex justify-between items-center px-2 pb-2 pt-1 gap-4">
-              <div className="flex-1 max-w-[200px]">
+              <div className="flex-1 max-w-[200px] bg-black/40 rounded-lg border border-white/10 px-3 py-2">
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
@@ -188,7 +185,7 @@ export function Home() {
                   style={{ color: "var(--color-text-secondary)" }}
                 >
                   {models.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <option className="bg-slate-950 text-gray-300" key={m.id} value={m.id}>
                       {m.name}
                     </option>
                   ))}
@@ -202,7 +199,6 @@ export function Home() {
                 disabled={!prompt.trim()}
                 className="btn-primary flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
               >
-                <Sparkles className="w-4 h-4" />
                 Generate Web App
                 <ArrowRight className="w-4 h-4" />
               </button>

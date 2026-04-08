@@ -37,27 +37,11 @@ export function StepsList({ steps, currentStep, onStepClick }: StepsListProps) {
         )}
       </div>
 
-      {/* Progress bar */}
-      {totalSteps > 0 && (
-        <div
-          className="w-full h-1 rounded-full mb-4 overflow-hidden"
-          style={{ background: "var(--color-bg-glass)" }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{
-              width: `${(completedSteps / totalSteps) * 100}%`,
-              background: "var(--gradient-accent)",
-            }}
-          />
-        </div>
-      )}
-
       <div className="space-y-1">
         {steps.map((step) => (
-          <div
+          <button
             key={step.id}
-            className="p-2.5 rounded-xl cursor-pointer transition-all duration-200"
+            className="w-full p-2.5 rounded-xl cursor-pointer transition-all duration-200 text-left"
             style={{
               background:
                 currentStep === step.id
@@ -111,7 +95,7 @@ export function StepsList({ steps, currentStep, onStepClick }: StepsListProps) {
                 {step.title}
               </span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

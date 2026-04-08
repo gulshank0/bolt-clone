@@ -5,6 +5,7 @@ import { FileExplorer } from "../components/FileExplorer";
 import { TabView } from "../components/TabView";
 import { CodeEditor } from "../components/CodeEditor";
 import { PreviewFrame } from "../components/PreviewFrame";
+import Terminal from "../components/Terminal";
 import { Step, FileItem, StepType } from "../types";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
@@ -294,10 +295,6 @@ export function Builder() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2">
-            <Sparkles
-              className="w-4 h-4"
-              style={{ color: "var(--color-accent)" }}
-            />
             <span className="text-sm font-semibold gradient-text">TARS</span>
           </div>
           <div
@@ -320,7 +317,7 @@ export function Builder() {
             className="bg-white/5 text-[11px] py-1.5 px-3 rounded-lg border border-white/10 text-gray-400 focus:outline-none focus:border-accent/40 cursor-pointer transition-colors"
           >
             {models.map((m) => (
-              <option key={m.id} value={m.id}>
+              <option className="bg-slate-950 text-gray-300" key={m.id} value={m.id}>
                 {m.name}
               </option>
             ))}
@@ -431,10 +428,15 @@ export function Builder() {
 
         {/* Middle Panel: File Explorer */}
         <div
-          className="col-span-2 overflow-auto"
+          className="col-span-2 flex flex-col overflow-hidden"
           style={{ borderRight: "1px solid var(--color-border)" }}
         >
-          <FileExplorer files={files} onFileSelect={setSelectedFile} />
+          <div className="flex-1 overflow-auto">
+            <FileExplorer files={files} onFileSelect={setSelectedFile} />
+          </div>
+          <div className="h-64" style={{ borderTop: "1px solid var(--color-border)" }}>
+            <Terminal webcontainer={webcontainer || null} />
+          </div>
         </div>
 
         {/* Right Panel: Code/Preview */}
@@ -443,13 +445,8 @@ export function Builder() {
             <TabView activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
           <div className="flex-1 overflow-hidden p-4 pt-0">
-            {activeTab === "code" ? (
-              <CodeEditor file={selectedFile} />
-            ) : (
-              webcontainer && (
-                <PreviewFrame webContainer={webcontainer} files={files} />
-              )
-            )}
+            {activeTab === "code" && <CodeEditor file={selectedFile} />}
+            {activeTab === "preview" && webcontainer && <PreviewFrame webContainer={webcontainer} files={files} />}
           </div>
         </div>
       </div>

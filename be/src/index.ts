@@ -4,6 +4,8 @@ import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold }
 import { BASE_PROMPT, getSystemPrompt } from "./prompts";
 import { basePrompt as nodeBasePrompt } from "./defaults/node";
 import { basePrompt as reactBasePrompt } from "./defaults/react";
+import { Counter } from "prom-client";
+import 
 import cors from "cors";
 
 if (!process.env.GEMINI_API_KEY) {
