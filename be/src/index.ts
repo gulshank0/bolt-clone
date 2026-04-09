@@ -4,8 +4,7 @@ import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold }
 import { BASE_PROMPT, getSystemPrompt } from "./prompts";
 import { basePrompt as nodeBasePrompt } from "./defaults/node";
 import { basePrompt as reactBasePrompt } from "./defaults/react";
-import { Counter } from "prom-client";
-import 
+import { Counter, Histogram, register } from "prom-client";
 import cors from "cors";
 
 if (!process.env.GEMINI_API_KEY) {
@@ -155,10 +154,71 @@ function cleanGeminiResponse(text: string): string {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
+// Basic request counter for monitoring 
+
+//Counter for the Prometheus metrics to count the number of requests to the TARS backend, labeled by route, method and status code
+let counter = new Counter({
+  name:'tars_requests_total',
+  help:'Total number of requests to TARS backend',
+  labelNames:['route','method','status_code'],
+});
+
+function requestCountMiddeleware(req: any, res: any, next: any){
+  counter.inc({route: req.path,method: req.method, status_code: res.statusCode});
+  next();
+}  
+app.use(requestCountMiddeleware);
+//Gauge for the Prometheus metrics to track the duration of requests to the TARS backend, labeled by route and method
+import { Gauge } from "prom-client";
+let gauge = new Gauge({
+  name:'tars_request_duration_seconds',
+  help:'Duration of requests to TARS backend in seconds',
+  labelNames:['route','method'],
+});
+
+// Middleware to track the duration of requests to the TARS backend
+let activeUserGauge = new Gauge({
+  name:'tars_active_users',
+  help:'Number of active users interacting with TARS backend',
+  labelNames:['route','method'],
+});
+function requestDurationMiddleware(req: any, res: any, next: any){
+  activeUserGauge.inc();
+  res.on('finish', () => {
+   // const duration = (Date.now() - start) / 1000;
+    activeUserGauge.dec({route: req.path, method: req.method});
+  });
+  next();
+}
+app.use(requestDurationMiddleware);
+
+
+//Histogram for the Prometheus metrics to track the distribution of response sizes from the TARS backend, labeled by route and method
+let histogram = new Histogram({
+  name:'tars_response_sizes',
+  help:'Buckets for response sizes from TARS backend in bytes',
+  buckets:[0.1, 1, 10, 100, 1000,3000],
+});
+function responseSizeMiddleware(req: any, res: any, next: any){
+  const startTime= Date.now();
+  res.on('finish', () => {
+    const endTime = Date.now();
+    histogram.observe(endTime - startTime);
+  });
+  next();
+}
+app.use(responseSizeMiddleware);
+    
+
 
 // Health check
-app.get("/health", (_req, res) => {
+app.get("/health",async (_req, res) => {
+  await new Promise((r) => setTimeout(r, 10*1000)); // Simulate some delay
   res.json({ status: "ok", model: MODEL_OPTIONS[0].id });
+});
+app.get("/metrics", async (_req, res) => {
+  res.set('Content-Type', register.contentType);       
+  res.end(await register.metrics());
 });
 
 // Get available models

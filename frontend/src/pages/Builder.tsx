@@ -5,7 +5,6 @@ import { FileExplorer } from "../components/FileExplorer";
 import { TabView } from "../components/TabView";
 import { CodeEditor } from "../components/CodeEditor";
 import { PreviewFrame } from "../components/PreviewFrame";
-import Terminal from "../components/Terminal";
 import { Step, FileItem, StepType } from "../types";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
@@ -433,9 +432,6 @@ export function Builder() {
         >
           <div className="flex-1 overflow-auto">
             <FileExplorer files={files} onFileSelect={setSelectedFile} />
-          </div>
-          <div className="h-64" style={{ borderTop: "1px solid var(--color-border)" }}>
-            <Terminal webcontainer={webcontainer || null} />
           </div>
         </div>
 
