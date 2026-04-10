@@ -213,7 +213,6 @@ app.use(responseSizeMiddleware);
 
 // Health check
 app.get("/health",async (_req, res) => {
-  await new Promise((r) => setTimeout(r, 10*1000)); // Simulate some delay
   res.json({ status: "ok", model: MODEL_OPTIONS[0].id });
 });
 app.get("/metrics", async (_req, res) => {
